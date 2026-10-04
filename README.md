@@ -14,6 +14,10 @@ Macro AUC on the PTB-XL test fold (fold 10), float32 models:
 | CNN+GRU            | 0.833  | 0.784    | 0.877  | 0.895   |
 | CNN+BiGRU+Attention| 0.832  | 0.785    | 0.886  | 0.898   |
 
+![Macro AUC and tuned F1 for the three architectures across lead configurations](docs/images/results_auc_f1.png)
+
+![Per-class AUC of the 1D-CNN across lead configurations](docs/images/per_class_auc.png)
+
 Compression of the deployed Lead-I 1D-CNN (quantization-aware training, INT8):
 
 | Metric                     | Value   |
@@ -60,12 +64,15 @@ Pin map used by the firmware:
 
 ## Photos and demo
 
-<!-- Replace these with real images, e.g. ![Prototype](docs/images/prototype.jpg) -->
+<p align="center">
+  <img src="docs/images/prototype.png" alt="ESP32 prototype enclosure with TFT showing an ECG trace and MI classification" width="48%">
+  <img src="docs/images/dashboard.png" alt="Doctor dashboard showing live Lead I ECG and prediction" width="48%">
+</p>
 
-| | |
-|---|---|
-| *Photo: assembled prototype* → `docs/images/prototype.jpg` | *Photo: TFT showing live ECG and prediction* → `docs/images/tft.jpg` |
-| *Screenshot: doctor dashboard* → `docs/images/dashboard.png` | *Demo GIF* → `docs/images/demo.gif` |
+*Left: prototype enclosure, TFT showing on-device classification of a stored PTB-XL MI sample. Right: doctor dashboard receiving live ECG, vitals and the on-device prediction.*
+
+<!-- Demo GIF: add docs/images/demo.gif, then uncomment the line below -->
+<!-- ![Demo](docs/images/demo.gif) -->
 
 ## Getting started
 
