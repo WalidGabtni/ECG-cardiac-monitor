@@ -1,6 +1,6 @@
 # Real-Time Cardiac Pathology Classification from ECG on ESP32
 
-End-to-end system that classifies five cardiac diagnostic superclasses (NORM, MI, STTC, CD, HYP) from a single-lead (Lead I) ECG, running **on the microcontroller itself**. A 1D-CNN trained on PTB-XL is compressed with quantization-aware training to INT8 (3.4×, 191 KB) and deployed with TensorFlow Lite Micro on an ESP32, which acquires the ECG from an AD8232 front-end and heart rate / SpO₂ from a MAX30100, shows the live trace and prediction on a TFT, and streams vitals to Supabase. A React dashboard lets doctors monitor patients remotely. Three architectures (1D-CNN, CNN+GRU, CNN+BiGRU+Attention) are compared; all reach a macro AUC of about 0.83 on Lead I, which shows that the information content of a single lead, not model complexity, is the limiting factor.
+End-to-end system that classifies five cardiac diagnostic superclasses (NORM, MI, STTC, CD, HYP) from a single-lead (Lead I) ECG, running **on the microcontroller itself**. A 1D-CNN trained on PTB-XL is quantized to INT8 (227 KB, no loss of AUC) and deployed with TensorFlow Lite Micro on an ESP32, which acquires the ECG from an AD8232 front-end and heart rate / SpO₂ from a MAX30100, shows the live trace and prediction on a TFT, and streams vitals to Supabase. A React dashboard lets doctors monitor patients remotely. Three architectures (1D-CNN, CNN+GRU, CNN+BiGRU+Attention) are compared; all reach a macro AUC of about 0.83 on Lead I, which shows that the information content of a single lead, not model complexity, is the limiting factor.
 
 > Master's thesis project: *Deep Learning-Based System for Early Prediction of Heart Attacks Using Medical Data* (ISSAT Mateur, 2026).
 
@@ -18,16 +18,17 @@ Macro AUC on the PTB-XL test fold (fold 10), float32 models:
 
 ![Per-class AUC of the 1D-CNN across lead configurations](docs/images/per_class_auc.png)
 
-Compression of the deployed Lead-I 1D-CNN (quantization-aware training, INT8):
+The table above comes from the thesis runs. The released Lead-I 1D-CNN checkpoint scores 0.8385 macro AUC on the same test fold (seed 42, see [`training/results/`](training/results)).
 
-| Metric                     | Value   |
-|----------------------------|---------|
-| Float32 model size         | 657 KB  |
-| INT8 model size            | 191 KB  |
-| Compression ratio          | 3.4×    |
-| Macro AUC after INT8 (QAT) | 0.831 (float32: 0.831) |
+INT8 quantization of that checkpoint, measured on the PTB-XL test fold (2,158 records) with the exported `.tflite` model:
 
-![Post-compression model sizes and ESP32 hardware metrics](docs/images/compression_deployment.png)
+| Metric | Value |
+|--------|-------|
+| Float32 macro AUC | 0.8385 |
+| INT8 `.tflite` macro AUC | 0.8387 |
+| INT8 model size | 227 KB |
+
+Quantization costs no accuracy. The firmware's input normalization (per Lead I window) differs slightly from the training normalization (12-lead statistics); this costs about 0.01 macro AUC on the float model. The model has been verified on a PC, and hardware validation on the ESP32 is pending.
 
 Only the 1D-CNN can be quantized end to end: PyTorch's QAT does not support GRU layers, so the recurrent models cannot be compressed the same way. Multi-seed results for the 1D-CNN are in [`training/results/`](training/results).
 
@@ -92,7 +93,7 @@ python src/train.py --model cnn_gru        --lead 0 --epochs 50
 python src/train.py --model cnn_bigru_attn --lead 0 --epochs 50
 
 python src/evaluate.py --model cnn1d --lead 0 --ckpt checkpoints/cnn1d_best.pth
-python src/convert_to_tflite.py --ckpt checkpoints/cnn1d_best.pth --lead 0   # QAT -> INT8 .tflite + C header
+python src/convert_to_tflite.py --ckpt checkpoints/cnn1d_best.pth --lead 0   # INT8 .tflite + C header (a QAT PyTorch model is also saved)
 ```
 
 `--lead` is `0` (Lead I), `2` (Lead III), `6` (frontal 6-lead) or `12`. Set `PTBXL_DIR` to use a dataset stored elsewhere. The trained INT8 model is already included as `training/deploy/cnn1d_int8.tflite` and `firmware/ecg_inference/cnn1d_model.h`.
@@ -124,7 +125,7 @@ Backend setup: create a Supabase project, apply `dashboard/supabase/migrations/*
 .
 ├── firmware/ecg_inference/   ESP32 sketch, INT8 model header, secrets.example.h
 ├── training/
-│   ├── src/                  dataset, models, training, evaluation, QAT + TFLite conversion
+│   ├── src/                  dataset, models, training, evaluation, INT8 TFLite conversion
 │   ├── scripts/              PTB-XL download
 │   ├── checkpoints/          final PyTorch checkpoints
 │   ├── deploy/               ONNX, .tflite and C headers
@@ -139,7 +140,7 @@ Backend setup: create a Supabase project, apply `dashboard/supabase/migrations/*
 - **Lead I is the bottleneck, not the architecture.** On Lead I the three models are within 0.002 macro AUC (0.831 / 0.833 / 0.832). Recurrent and attention layers model temporal structure; they cannot recover spatial information that a single lead never recorded.
 - **More leads help far more than a bigger model.** Macro AUC rises to ~0.88 with six frontal leads and ~0.90 with twelve, with the largest gains on MI (0.780 → 0.914 from Lead I to 12-lead).
 - **Lead III is clearly worse than Lead I** (about −0.04 macro AUC) for every architecture.
-- **Compression favours the plain CNN.** QAT shrinks the 1D-CNN 3.4× (657 KB to 191 KB) with no loss of macro AUC (0.831), while GRU-based models cannot be quantized with current PyTorch QAT. The deployed model fits comfortably in ESP32 flash and SRAM.
+- **Quantization is lossless here.** INT8 quantization brings the 1D-CNN to 227 KB with no loss of macro AUC (0.8387 vs 0.8385 float). The GRU-based models cannot go through PyTorch's QAT path, so only the 1D-CNN is deployed. The model fits comfortably in ESP32 flash and SRAM.
 
 ## Data and licence notes
 
