@@ -1,0 +1,5 @@
+model,lead,n_seeds,mean_macro_auc,std_macro_auc
+cnn1d,Lead I,3,0.8385,0.0011
+cnn1d,Lead III,3,0.7922,0.0014
+cnn1d,6-lead,3,0.8876,0.0004
+cnn1d,12-lead,3,0.9103,0.0022

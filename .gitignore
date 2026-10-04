@@ -1,0 +1,75 @@
+# ── Secrets ──────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets.h
+!secrets.example.h
+
+# ── Python ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+venv*/
+env/
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# ── Datasets (download with training/scripts/download_ptbxl.py) ──
+training/data/
+data/
+physionet.org/
+*.dat
+*.hea
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.csv.gz
+
+# ── Intermediate training artifacts ──────────────────────
+# Final deployed checkpoints live in training/checkpoints and are
+# re-included below; seed runs and QAT intermediates are not.
+training/checkpoints/*_s[0-9]*_best.pth
+training/checkpoints/*_qat_fp.pth
+training/checkpoints/*_ptq.pth
+lightning_logs/
+runs/
+wandb/
+
+# ── Node / dashboard ─────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.local
+dashboard/supabase/.temp/
+dashboard/supabase/.branches/
+
+# ── PlatformIO / Arduino builds ──────────────────────────
+.pio/
+.pioenvs/
+.piolibdeps/
+build/
+*.elf
+*.bin
+*.map
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# ── AI tooling ───────────────────────────────────────────
+CLAUDE.md
+.claude/
+
+# ── OS / editor ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
