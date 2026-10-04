@@ -1,6 +1,6 @@
 # Real-Time Cardiac Pathology Classification from ECG on ESP32
 
-End-to-end system that classifies five cardiac diagnostic superclasses (NORM, MI, STTC, CD, HYP) from a single-lead (Lead I) ECG, running **on the microcontroller itself**. A 1D-CNN trained on PTB-XL is compressed with quantization-aware training to INT8 (3.60×, ~187 KB) and deployed with TensorFlow Lite Micro on an ESP32, which acquires the ECG from an AD8232 front-end and heart rate / SpO₂ from a MAX30100, shows the live trace and prediction on a TFT, and streams vitals to Supabase. A React dashboard lets doctors monitor patients remotely. Three architectures (1D-CNN, CNN+GRU, CNN+BiGRU+Attention) are compared; all reach a macro AUC of about 0.83 on Lead I, which shows that the information content of a single lead, not model complexity, is the limiting factor.
+End-to-end system that classifies five cardiac diagnostic superclasses (NORM, MI, STTC, CD, HYP) from a single-lead (Lead I) ECG, running **on the microcontroller itself**. A 1D-CNN trained on PTB-XL is compressed with quantization-aware training to INT8 (3.4×, 191 KB) and deployed with TensorFlow Lite Micro on an ESP32, which acquires the ECG from an AD8232 front-end and heart rate / SpO₂ from a MAX30100, shows the live trace and prediction on a TFT, and streams vitals to Supabase. A React dashboard lets doctors monitor patients remotely. Three architectures (1D-CNN, CNN+GRU, CNN+BiGRU+Attention) are compared; all reach a macro AUC of about 0.83 on Lead I, which shows that the information content of a single lead, not model complexity, is the limiting factor.
 
 > Master's thesis project: *Deep Learning-Based System for Early Prediction of Heart Attacks Using Medical Data* (ISSAT Mateur, 2026).
 
@@ -22,9 +22,12 @@ Compression of the deployed Lead-I 1D-CNN (quantization-aware training, INT8):
 
 | Metric                     | Value   |
 |----------------------------|---------|
-| Compression ratio          | 3.60×   |
-| INT8 model size            | ~187 KB |
-| Macro AUC after INT8 (QAT) | 0.8318  |
+| Float32 model size         | 657 KB  |
+| INT8 model size            | 191 KB  |
+| Compression ratio          | 3.4×    |
+| Macro AUC after INT8 (QAT) | 0.831 (float32: 0.831) |
+
+![Post-compression model sizes and ESP32 hardware metrics](docs/images/compression_deployment.png)
 
 Only the 1D-CNN can be quantized end to end: PyTorch's QAT does not support GRU layers, so the recurrent models cannot be compressed the same way. Multi-seed results for the 1D-CNN are in [`training/results/`](training/results).
 
@@ -136,7 +139,7 @@ Backend setup: create a Supabase project, apply `dashboard/supabase/migrations/*
 - **Lead I is the bottleneck, not the architecture.** On Lead I the three models are within 0.002 macro AUC (0.831 / 0.833 / 0.832). Recurrent and attention layers model temporal structure; they cannot recover spatial information that a single lead never recorded.
 - **More leads help far more than a bigger model.** Macro AUC rises to ~0.88 with six frontal leads and ~0.90 with twelve, with the largest gains on MI (0.780 → 0.914 from Lead I to 12-lead).
 - **Lead III is clearly worse than Lead I** (about −0.04 macro AUC) for every architecture.
-- **Compression favours the plain CNN.** QAT shrinks the 1D-CNN 3.60× to ~187 KB with no loss of macro AUC (0.8318), while GRU-based models cannot be quantized with current PyTorch QAT. The deployed model fits comfortably in ESP32 flash and SRAM.
+- **Compression favours the plain CNN.** QAT shrinks the 1D-CNN 3.4× (657 KB to 191 KB) with no loss of macro AUC (0.831), while GRU-based models cannot be quantized with current PyTorch QAT. The deployed model fits comfortably in ESP32 flash and SRAM.
 
 ## Data and licence notes
 
